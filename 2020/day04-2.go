@@ -10,14 +10,14 @@ import (
 	"strings"
 )
 
-var eyeColors = map[string]interface{}{
-	"amb": nil,
-	"blu": nil,
-	"brn": nil,
-	"gry": nil,
-	"grn": nil,
-	"hzl": nil,
-	"oth": nil,
+var eyeColors = map[string]bool{
+	"amb": true,
+	"blu": true,
+	"brn": true,
+	"gry": true,
+	"grn": true,
+	"hzl": true,
+	"oth": true,
 }
 
 func main() {
