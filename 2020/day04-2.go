@@ -1,4 +1,5 @@
-// does not work
+// shamelessly stolen from github.com/dds because im
+// a pussy ass bitch who couldnt figure it out
 
 package main
 
@@ -9,128 +10,132 @@ import (
 	"strings"
 )
 
-var neededFields = []string{
-	"byr",
-	"iyr",
-	"eyr",
-	"hgt",
-	"hcl",
-	"ecl",
-	"pid",
-}
+func parse(input string) [][]string {
+	lines := strings.Split(input, "\n\n")
+	r := make([][]string, 0)
+	for _, line := range lines {
+		fields := strings.Fields(line)
+		if len(fields) == 0 {
+			continue
+		}
+		r = append(r, fields)
+	}
 
-var validEyeMap = map[string]bool{
-	"amb": true,
-	"blu": true,
-	"brn": true,
-	"gry": true,
-	"grn": true,
-	"hzl": true,
-	"oth": true,
+	return r
 }
 
 func main() {
-	sData := strings.Split(data, "\n\n")
-	pData := make([][]string, len(sData))
-	for i := 0; i < len(sData); i++ {
-		sData[i] = strings.ReplaceAll(sData[i], "\n", " ")
-		passed := true
-		
-		for i := 0; i < len(neededFields); i++ {
-			if !strings.Contains(sData[i], neededFields[i]) {
-				passed = false
-				break
-			}
-		}
-		
-		if passed {
-			pData[i] = strings.Split(sData[i], " ")
-		}
-	}
-
-	var validPassports int
-	for _, pass := range pData {
-		valid := true
-		for _, field := range pass {
-			sField := strings.Split(field, ":")
-			if sField[0] == "byr" {
-				iInfo, _ := strconv.Atoi(sField[1])
-				if iInfo < 1920 || iInfo > 2002 {
-					valid = false
-					fmt.Printf("%v failed with field %v\n", pass, field)
-					break
-				}
-			} else if sField[0] == "iyr" {
-				iInfo, _ := strconv.Atoi(sField[1])
-				if iInfo < 2010 || iInfo > 2020 {
-					valid = false
-					fmt.Printf("%v failed with field %v\n", pass, field)
-					break
-				}
-			} else if sField[0] == "eyr" {
-				iInfo, _ := strconv.Atoi(sField[1])
-				if iInfo < 2020 || iInfo > 2030 {
-					valid = false
-					fmt.Printf("%v failed with field %v\n", pass, field)
-					break
-				}
-			} else if sField[0] == "hgt" {
-				sInfo := strings.Split(sField[1], "")
-				iInfo, _ := strconv.Atoi(strings.Join(sInfo[:len(sInfo)-2], ""))
-
-				if sInfo[len(sField[1])-1] == "m" {
-					if iInfo < 150 || iInfo > 193 {
-						valid = false
-						fmt.Printf("%v failed with field %v\n", pass, field)
-						break
-					}
-				} else if sInfo[len(sField[1])-1] == "n" {
-					if iInfo < 59 || iInfo > 76 {
-						valid = false
-						fmt.Printf("%v failed with field %v\n", pass, field)
-						break
-					}
-				} else {
-					valid = false
-					fmt.Printf("%v failed with field %v\n", pass, field)
-					break
-				}
-			} else if sField[0] == "hcl" {
-				reg, err := regexp.Compile(`\#[a-zA-Z0-9]{6}`)
-				if err != nil {
-					fmt.Printf("Invalid regex! | %v\n", err)
-					return
-				}
-
-				if len(sField[1]) != 7 || !reg.MatchString(sField[1]) {
-					valid = false
-					fmt.Printf("%v failed with field %v\n", pass, field)
-					break
-				}
-			} else if sField[0] == "ecl" {
-				if !validEyeMap[sField[1]] {
-					valid = false
-					fmt.Printf("%v failed with field %v\n", pass, field)
-					break
-				}
-			} else if sField[0] == "pid" {
-				if _, err := strconv.Atoi(sField[1]); err != nil || len(sField[1]) != 9 {
-					valid = false
-					fmt.Printf("%v failed with field %v\n", pass, field)
-					break
-				}
-			}
-		}
-
-		if valid {
-			validPassports++
-		}
-	}
-
-	fmt.Printf("Number of valid passports: %v\n", validPassports)
+	fmt.Println(part1(Input))
+	fmt.Println(part2(Input))
 }
 
-const data = `iyr:2015
+func part1(input [][]string) (rc int) {
+loop:
+	for _, row := range input {
+		fields := map[string]string{}
+		required := []string{
+			"byr",
+			"iyr",
+			"eyr",
+			"hgt",
+			"hcl",
+			"ecl",
+			"pid",
+		}
+		for _, field := range row {
+			s := strings.Split(field, ":")
+			fields[s[0]] = s[1]
+		}
+		for _, k := range required {
+			if fields[k] == "" {
+				continue loop
+			}
+		}
+		rc++
+	}
+	return
+}
+
+func part2(input [][]string) (rc int) {
+	type rule struct {
+		min, max int
+		re       *regexp.Regexp
+	}
+loop:
+	for _, row := range input {
+		fields := map[string]string{}
+		required := map[string]rule{
+			"byr": rule{
+				min: 1920, max: 2002,
+				re: regexp.MustCompile(`^(\d{4})$`)},
+			"iyr": rule{
+				min: 2010, max: 2020,
+				re: regexp.MustCompile(`^(\d{4})$`)},
+			"eyr": rule{
+				min: 2020, max: 2030,
+				re: regexp.MustCompile(`^(\d{4})$`)},
+			"hgt": rule{
+				min: 150, max: 193,
+				re: regexp.MustCompile(`^(\d+)(cm|in)$`)},
+			"hcl": rule{
+				re: regexp.MustCompile(`^#[0-9a-f]{6}$`)},
+			"ecl": rule{re: regexp.MustCompile(`^(amb|blu|brn|gry|grn|hzl|oth)$`)},
+			"pid": rule{re: regexp.MustCompile(`^(\d{9})$`)},
+			"cid": rule{re: regexp.MustCompile(`.*`)},
+		}
+		for _, field := range row {
+			s := strings.Split(field, ":")
+			rule := required[s[0]]
+			if rule.re == nil {
+				continue loop
+			}
+			if !rule.re.MatchString(s[1]) {
+				continue loop
+			}
+			switch s[0] {
+			case "byr":
+				fallthrough
+			case "iyr":
+				fallthrough
+			case "eyr":
+				u, err := strconv.Atoi(rule.re.FindStringSubmatch(s[1])[1])
+				if err != nil {
+					panic(err)
+				}
+				if u < rule.min || u > rule.max {
+					continue loop
+				}
+			case "hgt":
+				u, err := strconv.Atoi(rule.re.FindStringSubmatch(s[1])[1])
+				if err != nil {
+					panic(err)
+				}
+				switch rule.re.FindStringSubmatch(s[1])[2] {
+				case "in":
+					if u < 59 || u > 76 {
+						continue loop
+					}
+				default:
+					if u < rule.min || u > rule.max {
+						continue loop
+					}
+				}
+			}
+			fields[s[0]] = s[1]
+		}
+		delete(fields, "cid")
+		fields["cid"] = "ignored"
+		for k := range required {
+			if fields[k] == "" {
+				continue loop
+			}
+		}
+		rc++
+	}
+	return
+}
+
+var Input = parse(`iyr:2015
 hgt:59cm byr:2029 cid:219 pid:9381688753 eyr:1992 hcl:#b6652a
 ecl:#7a0fa6
 
@@ -1158,4 +1163,4 @@ eyr:2030 hgt:163cm iyr:2014
 pid:147768826 ecl:blu byr:1922 hcl:#ceb3a1 cid:169
 
 ecl:blu byr:2002 eyr:2028 pid:998185490 cid:165 iyr:2020
-hgt:188cm hcl:#c0946f`
+hgt:188cm hcl:#c0946f`)
