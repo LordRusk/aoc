@@ -1,16 +1,25 @@
-// does work, i havent passed this test
+// does not work
 
 package main
 
 import (
 	"fmt"
-	"log"
 	"regexp"
 	"strconv"
 	"strings"
 )
 
-var eyeColors = map[string]bool{
+var neededFields = []string{
+	"byr",
+	"iyr",
+	"eyr",
+	"hgt",
+	"hcl",
+	"ecl",
+	"pid",
+}
+
+var validEyeMap = map[string]bool{
 	"amb": true,
 	"blu": true,
 	"brn": true,
@@ -22,98 +31,103 @@ var eyeColors = map[string]bool{
 
 func main() {
 	sData := strings.Split(data, "\n\n")
-	pData := [][]string{}
-
-	for _, data := range sData {
-		pData = append(pData, strings.Fields(data))
+	pData := make([][]string, len(sData))
+	for i := 0; i < len(sData); i++ {
+		sData[i] = strings.ReplaceAll(sData[i], "\n", " ")
+		passed := true
+		
+		for i := 0; i < len(neededFields); i++ {
+			if !strings.Contains(sData[i], neededFields[i]) {
+				passed = false
+				break
+			}
+		}
+		
+		if passed {
+			pData[i] = strings.Split(sData[i], " ")
+		}
 	}
 
-	var numValidPassports int
-	for _, passport := range pData {
-		passed := true
-		for num, field := range passport {
+	var validPassports int
+	for _, pass := range pData {
+		valid := true
+		for _, field := range pass {
 			sField := strings.Split(field, ":")
-
 			if sField[0] == "byr" {
 				iInfo, _ := strconv.Atoi(sField[1])
-
 				if iInfo < 1920 || iInfo > 2002 {
-					fmt.Printf("Passport number: %v, test %v: field %v: failed\n", num, sField[0], sField[1])
-
-					passed = false
+					valid = false
+					fmt.Printf("%v failed with field %v\n", pass, field)
+					break
 				}
 			} else if sField[0] == "iyr" {
 				iInfo, _ := strconv.Atoi(sField[1])
-
 				if iInfo < 2010 || iInfo > 2020 {
-					fmt.Printf("Passport number: %v, test %v: field %v: failed\n", num, sField[0], sField[1])
-
-					passed = false
+					valid = false
+					fmt.Printf("%v failed with field %v\n", pass, field)
+					break
 				}
 			} else if sField[0] == "eyr" {
 				iInfo, _ := strconv.Atoi(sField[1])
-
 				if iInfo < 2020 || iInfo > 2030 {
-					fmt.Printf("Passport number: %v, test %v: field %v: failed\n", num, sField[0], sField[1])
-
-					passed = false
+					valid = false
+					fmt.Printf("%v failed with field %v\n", pass, field)
+					break
 				}
 			} else if sField[0] == "hgt" {
-				if strings.Contains(sField[0], "cm") {
-					iInfo, err := strconv.Atoi(string([]byte(sField[1])[:2]))
-					if err != nil {
-						log.Fatalln(err)
-					}
+				sInfo := strings.Split(sField[1], "")
+				iInfo, _ := strconv.Atoi(strings.Join(sInfo[:len(sInfo)-2], ""))
 
+				if sInfo[len(sField[1])-1] == "m" {
 					if iInfo < 150 || iInfo > 193 {
-						fmt.Printf("Passport number: %v, test %v: field %v: failed\n", num, sField[0], sField[1])
-
-						passed = false
+						valid = false
+						fmt.Printf("%v failed with field %v\n", pass, field)
+						break
 					}
-				} else if strings.Contains(sField[0], "in") {
-					iInfo, err := strconv.Atoi(string([]byte(sField[1])[:2]))
-					if err != nil {
-						log.Fatalln(err)
-					}
-
+				} else if sInfo[len(sField[1])-1] == "n" {
 					if iInfo < 59 || iInfo > 76 {
-						fmt.Printf("Passport number: %v, test %v: field %v: failed\n", num, sField[0], sField[1])
-
-						passed = false
+						valid = false
+						fmt.Printf("%v failed with field %v\n", pass, field)
+						break
 					}
+				} else {
+					valid = false
+					fmt.Printf("%v failed with field %v\n", pass, field)
+					break
 				}
 			} else if sField[0] == "hcl" {
-				reg, err := regexp.Compile(`[a-zA-Z0-9]*`)
+				reg, err := regexp.Compile(`\#[a-zA-Z0-9]{6}`)
 				if err != nil {
-					log.Fatalln(err)
+					fmt.Printf("Invalid regex! | %v\n", err)
+					return
 				}
 
-				if len(sField[1]) != 7 || reg.Find([]byte(sField[1])) == nil {
-					fmt.Printf("Passport number: %v, test %v: field %v: failed\n", num, sField[0], sField[1])
-
-					passed = false
+				if len(sField[1]) != 7 || !reg.MatchString(sField[1]) {
+					valid = false
+					fmt.Printf("%v failed with field %v\n", pass, field)
+					break
 				}
 			} else if sField[0] == "ecl" {
-				if _, ok := eyeColors[sField[1]]; !ok {
-					fmt.Printf("Passport number: %v, test %v: field %v: failed\n", num, sField[0], sField[1])
-
-					passed = false
+				if !validEyeMap[sField[1]] {
+					valid = false
+					fmt.Printf("%v failed with field %v\n", pass, field)
+					break
 				}
 			} else if sField[0] == "pid" {
 				if _, err := strconv.Atoi(sField[1]); err != nil || len(sField[1]) != 9 {
-					fmt.Printf("Passport number: %v, test %v: field %v: failed\n", num, sField[0], sField[1])
-
-					passed = false
+					valid = false
+					fmt.Printf("%v failed with field %v\n", pass, field)
+					break
 				}
 			}
 		}
 
-		if passed {
-			numValidPassports++
+		if valid {
+			validPassports++
 		}
 	}
 
-	fmt.Printf("Number of valid passports: %+v\n", numValidPassports)
+	fmt.Printf("Number of valid passports: %v\n", validPassports)
 }
 
 const data = `iyr:2015
