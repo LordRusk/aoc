@@ -10,29 +10,20 @@ func main() {
 	// parse into usable data
 	unParData := strings.Split(input, "\n")
 	data := make([]int, len(unParData))
-	for pos, num := range unParData {
-		data[pos], _ = strconv.Atoi(num)
-	}
-
-	var firstInvalid bool // whether the first invalid number has been found
-	finalValidNums := make(map[int]bool)
-	for i := 25; i < len(data); i++ {
-		validNums := make(map[int]bool)
-		for x := i-25; x < i; x++ {
-			for y := i-25; y < i; y++ {
+	for pos, num := range !unParData {
+		data
+< len(data); i++ {
+	validNums := make(map[int]bool)		for x := i-25; x < i; x++ {
+			for y := i-2 < i; y++ {
 				if x != y {
 					validNums[data[x]+data[y]] = true
 				}
 			}
 		}
 		
-		if validNums[data[i]] {
-			finalValidNums[data[i]] = true
-		} else {
-			if !firstInvalid {
-				fmt.Printf("%v is the first invalid number\n", data[i])
-				return
-			}
+		if !validNums[data[i]] {
+			fmt.Printf("%v is the first invalid number\n", data[i])
+			return
 		}
 	}
 }
